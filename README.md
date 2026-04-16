@@ -1,6 +1,141 @@
 ## Hướng dẫn setup:
 
+### Yêu cầu hệ thống
+- Docker & Docker Compose
+- Node.js >= 18.x (nếu chạy local không dùng Docker)
+- npm hoặc yarn
+
+### Các bước cài đặt
+
+#### 1. Clone repository và di chuyển vào thư mục dự án
+```bash
+git clone <repository-url>
+cd financial-ledger-cassandra
+```
+
+#### 2. Tạo file biến môi trường
+Tạo file `.env` trong thư mục gốc với các biến sau:
+```env
+CASSANDRA_HOST=localhost
+CASSANDRA_PORT=9042
+BACKEND_PORT=3000
+FRONTEND_PORT=5173
+```
+
+#### 3. Cài đặt dependencies
+
+**Backend:**
+```bash
+cd backend
+npm install
+```
+
+**Frontend:**
+```bash
+cd frontend
+npm install
+```
+
+#### 4. Cài đặt Cassandra (chọn 1 trong 2 cách)
+
+**Cách 1: Dùng Docker (khuyến nghị)**
+```bash
+# Từ thư mục gốc
+docker-compose up -d cassandra
+```
+
+**Cách 2: Cài đặt local**
+- Tải và cài đặt Cassandra từ https://cassandra.apache.org/_/download.html
+- Khởi động Cassandra service
+
+#### 5. Khởi tạo database
+```bash
+# Kết nối vào Cassandra và chạy các script theo thứ tự:
+cqlsh -f database/keyspace.cql
+cqlsh -f database/init.cql
+cqlsh -f database/ttl_config.cql
+cqlsh -f database/mv_setup.cql
+```
+
 ## Hướng dẫn chạy:
+
+### Cách 1: Chạy toàn bộ bằng Docker (khuyến nghị)
+```bash
+# Từ thư mục gốc, dựng tất cả services (Cassandra + Backend + Frontend)
+docker-compose up -d
+
+# Xem logs để kiểm tra
+docker-compose logs -f
+```
+
+Truy cập ứng dụng tại:
+- **Frontend:** http://localhost:5173
+- **Backend API:** http://localhost:3000
+
+### Cách 2: Chạy local (thủ công)
+
+#### 1. Khởi động Cassandra
+```bash
+# Nếu dùng Docker chỉ cho Cassandra
+docker-compose up -d cassandra
+
+# Hoặc khởi động Cassandra local đã cài đặt
+# Đảm bảo Cassandra đang chạy ở port 9042
+```
+
+#### 2. Khởi tạo database (nếu chưa làm ở bước setup)
+```bash
+cqlsh -f database/keyspace.cql
+cqlsh -f database/init.cql
+cqlsh -f database/ttl_config.cql
+cqlsh -f database/mv_setup.cql
+```
+
+#### 3. Chạy Backend
+```bash
+cd backend
+npm start
+# Server sẽ chạy tại http://localhost:3000
+```
+
+#### 4. Chạy Frontend (ở terminal mới)
+```bash
+cd frontend
+npm run dev
+# Frontend sẽ chạy tại http://localhost:5173
+```
+
+### Kiểm tra và test hệ thống
+
+#### 1. Test API ingestion (ghi giao dịch)
+```bash
+# Gửi request POST để thêm giao dịch mẫu
+curl -X POST http://localhost:3000/api/transactions/bulk \
+  -H "Content-Type: application/json" \
+  -d '{"account_id": "ACC001", "amount": 1000000, "type": "deposit"}'
+```
+
+#### 2. Test API query (đọc giao dịch)
+```bash
+# Truy vấn lịch sử giao dịch theo account_id
+curl http://localhost:3000/api/transactions?account_id=ACC001
+```
+
+#### 3. Chạy load test (tùy chọn)
+```bash
+cd load-test/k6
+k6 run bulk_insert.js
+```
+
+#### 4. Xem kết quả benchmark
+- Kết quả load test được lưu tại `load-test/results/`
+- Xem chi tiết tại `docs/benchmark-results.md`
+
+### Lưu ý
+- Đảm bảo Cassandra đã khởi động hoàn toàn trước khi chạy backend
+- File `.env` cần được cấu hình đúng trước khi chạy
+- Materialized View cho thống kê loại giao dịch được tạo tự động sau khi chạy `mv_setup.cql`
+- TTL 1 năm được áp dụng tự động cho các giao dịch cũ
 
 ## Cấu trúc repo:
 
