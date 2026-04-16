@@ -1,10 +1,3 @@
--- =========================================================
--- schema.cql | Financial Transaction Ledger (Cassandra)
--- Author: Lân (DB Architect)
--- Requirements: High write throughput, Partition by account_id, 
---               Clustering by time DESC, 1-year TTL, MV by type
--- =========================================================
-
 -- 1. Tạo Keyspace (Dùng cho môi trường dev/local)
 CREATE KEYSPACE IF NOT EXISTS financial_ledger
 WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
@@ -13,20 +6,21 @@ USE financial_ledger;
 
 -- 2. Bảng chính lưu lịch sử giao dịch
 CREATE TABLE IF NOT EXISTS transactions (
-    account_id TEXT,                -- Partition Key: Gom cụm dữ liệu theo tài khoản
-    transaction_time TIMESTAMP,     -- Clustering Key 1: Sắp xếp thời gian giảm dần
-    transaction_id UUID,            -- Clustering Key 2: Đảm bảo uniqueness nếu trùng timestamp
-    transaction_type TEXT,          -- 'DEPOSIT', 'WITHDRAWAL', 'TRANSFER'
+    account_id TEXT,                
+    transaction_time TIMESTAMP,    
+    transaction_id UUID,           
+    transaction_type TEXT,     -- 'DEPOSIT', 'WITHDRAWAL', 'TRANSFER'
     amount DECIMAL,
     currency TEXT DEFAULT 'VND',
     description TEXT,
     status TEXT DEFAULT 'COMPLETED',
     PRIMARY KEY ((account_id), transaction_time DESC, transaction_id)
 ) WITH 
-    default_time_to_live = 31536000  -- TTL 1 năm (365 * 24 * 3600 giây)
+    default_time_to_live = 31536000  
     AND compaction = {'class': 'SizeTieredCompactionStrategy'}
     AND caching = {'keys': 'ALL', 'rows_per_partition': '100'}
     AND comment = 'Optimized for high write & point lookup by account_id';
+
 
 -- 3. Materialized View: Filter/Aggregate theo loại giao dịch
 -- Cho phép truy vấn nhanh: WHERE transaction_type = ? AND account_id = ?
