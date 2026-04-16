@@ -66,3 +66,33 @@ PRIMARY KEY ((partition_key), clustering_key_1, clustering_key_2)
 Partition Key: Quyết định dữ liệu nằm trên node nào. Các row cùng partition key sẽ nằm cùng vật lý.
 Clustering Key: Sắp xếp dữ liệu bên trong một partition. Hỗ trợ truy vấn range (>, <, BETWEEN).
 ⚠️ Lưu ý vàng: Cassandra không hỗ trợ JOIN, không hỗ trợ transaction đa bảng (chỉ hỗ trợ lightweight transaction đơn giản với IF NOT EXISTS/IF condition), và WHERE clause bị giới hạn. Bạn phải thiết kế table theo truy vấn, không phải theo chuẩn hóa.
+
+### 4.2 Kiểu dữ liệu phổ biến
+text, varchar, int, float, boolean, timestamp, uuid, blob, decimal, inet, list, set, map
+
+```
+-- Tạo Keyspace (1 bản sao, chiến lược đơn giản)
+CREATE KEYSPACE demo WITH REPLICATION = {
+  'class': 'SimpleStrategy',
+  'replication_factor': 1
+};
+
+USE demo;
+
+-- Tạo table (partition: user_id, clustering: created_at)
+CREATE TABLE user_logs (
+  user_id uuid,
+  created_at timestamp,
+  action text,
+  details text,
+  PRIMARY KEY ((user_id), created_at)
+) WITH CLUSTERING ORDER BY (created_at DESC);
+
+-- Insert
+INSERT INTO user_logs (user_id, created_at, action, details) 
+VALUES (uuid(), toTimestamp(now()), 'LOGIN', 'Mobile App');
+
+-- Select (PHẢI có partition key trong WHERE)
+SELECT * FROM user_logs WHERE user_id = <uuid>;
+SELECT * FROM user_logs WHERE user_id = <uuid> AND created_at > '2025-01-01';
+```
