@@ -106,7 +106,8 @@ WITH CLUSTERING ORDER BY (transaction_time DESC);
 | Hạng mục | Trạng thái | Ghi chú |
 |---|---|---|
 | Nghiên cứu đề tài, phân công nhóm | ✅ Hoàn thành | |
-| Nghiên cứu Apache Cassandra, CQL | ✅ Hoàn thành | |
+| Nghiên cứu Apache Cassandra, CQL | ✅ H
+oàn thành | |
 | Thiết kế schema (Partition Key, Clustering Key, TTL, Materialized View) | ✅ Hoàn thành | Xem mục 3 |
 | Thiết kế kiến trúc hệ thống | ✅ Hoàn thành | Xem mục 4 |
 | Cài đặt môi trường Cassandra (Docker / Astra DB) | ⏳ Đang thực hiện | |
@@ -116,7 +117,6 @@ WITH CLUSTERING ORDER BY (transaction_time DESC);
 | Xây dựng giao diện Transaction Explorer (Frontend) | ⏳ Đang thực hiện | |
 | Tích hợp WebSocket/SSE realtime | ⏳ Chưa bắt đầu | |
 | Demo tổng thể | ⏳ Chưa bắt đầu | Dự kiến báo cáo lần 2 |
-
 ---
 
 ## 6. Khó khăn dự kiến & hướng giải quyết
