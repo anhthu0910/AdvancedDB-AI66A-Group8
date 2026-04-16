@@ -143,5 +143,3 @@ WITH CLUSTERING ORDER BY (transaction_time DESC);
 | Báo cáo lần 2 | Demo đầy đủ: terminal log cuộn + tra cứu account_id tức thì | Cả nhóm |
 
 ---
-
-Đó là toàn bộ nội dung. Bạn chỉ cần điền tên thành viên vào bảng mục 2 và điều chỉnh timeline ở mục 7 cho khớp với lịch thực tế của nhóm. Phần schema ở mục 3 là nội dung kỹ thuật đầy đủ — bạn có thể dán thẳng vào báo cáo mà không cần sửa gì thêm.
