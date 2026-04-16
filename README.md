@@ -3,7 +3,7 @@
 ## Hướng dẫn chạy:
 
 ## Cấu trúc repo:
-
+```
 financial-ledger-cassandra/
 ├── README.md                     # Hướng dẫn setup, chạy, cấu trúc repo
 ├── .gitignore                    # Bỏ qua node_modules, .env, build/, .DS_Store
@@ -71,3 +71,4 @@ financial-ledger-cassandra/
     ├── architecture.md           # Sơ đồ luồng dữ liệu, tech stack
     ├── data-modeling.md          # Giải thích Partition/Clustering, TTL, MV
     └── benchmark-results.md      # k6 output, EXPLAIN/TRACING logs
+```
