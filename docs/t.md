@@ -1,7 +1,6 @@
 
 ---
 
-# BÁO CÁO TIẾN ĐỘ LẦN 1
 ## Đề tài 6: Hệ thống Lưu trữ Nhật ký Giao dịch Tài chính (Financial Transaction Ledger)
 ### Môn: Database Advanced
 
@@ -21,10 +20,10 @@ Cơ sở dữ liệu quan hệ truyền thống (MySQL, PostgreSQL) bắt đầu
 
 | STT | Thành viên | Vai trò | Công việc chính | Tech stack |
 |---|---|---|---|---|
-| 1 | [Tên TV1] | DB Architect & DB Administrator | Thiết kế schema Cassandra, Partition Key, Clustering Key, Materialized View, TTL | Apache Cassandra, DataStax Astra DB, DBeaver / DataStax Studio |
-| 2 | [Tên TV2] | Backend Dev 1 — Data Ingestion | Xây dựng Data Generator, Bulk Insert/Async Write ~500 tx/giây, tính throughput realtime | Node.js, cassandra-driver, Faker |
-| 3 | [Tên TV3] | Backend Dev 2 — Data Query | RESTful API truy vấn theo account_id, bộ lọc loại giao dịch + khoảng thời gian, kênh WebSocket/SSE realtime | Node.js, cassandra-driver, Socket.io |
-| 4 | [Tên TV4] | Frontend Developer UX/UI | Giao diện Transaction Explorer: terminal log realtime (trái) + bảng sao kê tìm kiếm (phải) | ReactJS, Recharts, Tailwind CSS, Socket.io-client, react-virtualized |
+| 1 | Lân | DB Architect & DB Administrator | Thiết kế schema Cassandra, Partition Key, Clustering Key, Materialized View, TTL | Apache Cassandra, DataStax Astra DB, DBeaver / DataStax Studio |
+| 2 | Khang | Backend Dev 1 — Data Ingestion | Xây dựng Data Generator, Bulk Insert/Async Write ~500 tx/giây, tính throughput realtime | Node.js, cassandra-driver, Faker |
+| 3 | Hiền | Backend Dev 2 — Data Query | RESTful API truy vấn theo account_id, bộ lọc loại giao dịch + khoảng thời gian, kênh WebSocket/SSE realtime | Node.js, cassandra-driver, Socket.io |
+| 4 | Thư | Frontend Developer UX/UI | Giao diện Transaction Explorer: terminal log realtime (trái) + bảng sao kê tìm kiếm (phải) | ReactJS, Recharts, Tailwind CSS, Socket.io-client, react-virtualized |
 
 ---
 
