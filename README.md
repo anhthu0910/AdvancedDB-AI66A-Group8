@@ -41,10 +41,10 @@ npm install
 **Cách 1: Dùng Docker (khuyến nghị)**
 ```bash
 # Từ thư mục gốc
-docker-compose up -d cassandra
+docker compose up -d cassandra
 ```
 
-**Cách 2: Cài đặt local**
+**Cách 2: Cài đặt local** (nặng nên không khuyến nghị)
 - Tải và cài đặt Cassandra từ https://cassandra.apache.org/_/download.html
 - Khởi động Cassandra service
 
@@ -155,23 +155,24 @@ financial-ledger-cassandra/
 │
 ├── backend/                      # 🟡 KHANG + 🟠 HIỀN (Chung 1 Express App)
 │   ├── package.json
+|   ├── server.js             # Khởi tạo HTTP server + gắn Socket.io
+|   ├── index.js              
 │   ├── src/
-│   │   ├── server.js             # Khởi tạo HTTP server + gắn Socket.io
-│   │   ├── config/
-│   │   │   └── db.js             # Cassandra Client Singleton (dùng chung)
-│   │   ├── routes/
-│   │   │   ├── ingestion.js      # 🟡 KHANG: POST /api/transactions/bulk
-│   │   │   └── query.js          # 🟠 HIỀN: GET /api/transactions, filter
-│   │   ├── controllers/
+│   │   ├── query/                      # 🟠 Hiền 
+│   │   │   ├── queryController.js      # 
+│   │   │   ├── query.js                # GET /api/transactions, filter
+│   │   │   ├── socket.js               # Socket.io server, broadcast batch
+│   │   │   └── throughputTracker.js    # GET /api/transactions, filter
+│   │   ├── ingestion/                  🟡 KHANG:
+│   │   │   ├── dataGenerator.js        # Faker + mock logic (Khang)
 │   │   │   ├── ingestionController.js
-│   │   │   └── queryController.js
-│   │   ├── services/
-│   │   │   ├── dataGenerator.js  # Faker + mock logic (Khang)
-│   │   │   └── throughputTracker.js  # Tính real-time tx/s (Khang)
-│   │   ├── ws/
-│   │   │   └── socket.js         # 🟠 HIỀN: Socket.io server, broadcast batch
-│   │   └── utils/
-│   │       └── response.js       # Chuẩn hóa JSON response & error handling
+│   │   │   ├── ingestion.js            # POST /api/transactions/bulk
+│   │   │   └── throughputTracker.js    # Tính real-time tx/s (Khang)
+│   │   ├── shared
+│   │   │   ├── config/
+│   │   │   |   └── db.js             # Cassandra Client Singleton (dùng chung)
+│   │   │   └── utils/
+│   │   │       └── response.js       # Chuẩn hóa JSON response & error handling
 │   └── docs/
 │       └── openapi.yaml          # Swagger contract (🟠 Hiền chủ trì)
 │

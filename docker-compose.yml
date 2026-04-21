@@ -1,0 +1,22 @@
+services:
+  cassandra:
+    image: cassandra:4.1
+    container_name: cassandra-node-1
+    ports:
+      - "9042:9042"
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+    environment:
+      - CASSANDRA_CLUSTER_NAME=MyDockerCluster
+      - CASSANDRA_DC=DC1
+      - CASSANDRA_RACK=RACK1
+      - MAX_HEAP_SIZE=512M
+      - HEAP_NEWSIZE=100M
+    healthcheck:
+      test: ["CMD-SHELL", "nodetool status | grep UN"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  cassandra_data:
