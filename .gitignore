@@ -5,3 +5,8 @@ node_modules
 build/
 
 .DS_Store
+
+Plan.md
+
+package.json
+package-lock.json

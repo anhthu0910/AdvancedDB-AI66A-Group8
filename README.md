@@ -164,10 +164,10 @@ financial-ledger-cassandra/
 │   │   │   ├── socket.js               # Socket.io server, broadcast batch
 │   │   │   └── throughputTracker.js    # GET /api/transactions, filter
 │   │   ├── ingestion/                  🟡 KHANG:
-│   │   │   ├── dataGenerator.js        # Faker + mock logic (Khang)
+│   │   │   ├── dataGenerator.js        # Faker + mock logic 
 │   │   │   ├── ingestionController.js
 │   │   │   ├── ingestion.js            # POST /api/transactions/bulk
-│   │   │   └── throughputTracker.js    # Tính real-time tx/s (Khang)
+│   │   │   └── throughputTracker.js    # Tính real-time tx/s 
 │   │   ├── shared
 │   │   │   ├── config/
 │   │   │   |   └── db.js             # Cassandra Client Singleton (dùng chung)
