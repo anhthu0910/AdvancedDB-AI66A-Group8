@@ -1,19 +1,20 @@
-## Hướng dẫn setup:
+# Hướng dẫn setup:
 
-### Yêu cầu hệ thống
+## A. Yêu cầu hệ thống
 - Docker & Docker Compose
 - Node.js >= 18.x (nếu chạy local không dùng Docker)
 - npm hoặc yarn
+- axios
 
-### Các bước cài đặt
+## B. Các bước cài đặt
 
-#### 1. Clone repository và di chuyển vào thư mục dự án
+### 1. Clone repository và di chuyển vào thư mục dự án
 ```bash
 git clone <repository-url>
-cd financial-ledger-cassandra
+cd AdvancedDB-AI66A-Group8
 ```
 
-#### 2. Tạo file biến môi trường
+### 2. Tạo file biến môi trường
 Tạo file `.env` trong thư mục gốc với các biến sau:
 ```env
 CASSANDRA_HOST=localhost
@@ -36,7 +37,7 @@ CASSANDRA_DC=datacenter1
 CASSANDRA_KEYSPACE=banking
 ```
 
-#### 3. Cài đặt dependencies
+### 3. Cài đặt dependencies
 
 **Backend:**
 ```bash
@@ -50,40 +51,40 @@ cd frontend
 npm install
 ```
 
-#### 4. Cài đặt Cassandra
+### 4. Khởi tạo database
 
-**Dùng Docker (khuyến nghị)**
+**Dùng Docker**
 ```bash
 # Từ thư mục gốc
-docker compose up -d cassandra
+docker-compose up -d cassandra
 ```
 
-
-#### 5. Khởi tạo database
+Verify schema đã được tạo:
 ```bash
-# Kết nối vào Cassandra và chạy các script theo thứ tự:
-cqlsh -f database/keyspace.cql
-cqlsh -f database/init.cql
-cqlsh -f database/ttl_config.cql
-cqlsh -f database/mv_setup.cql
+# Kiểm tra keyspace có tồn tại không
+docker exec -it cassandra cqlsh -e "DESCRIBE KEYSPACES;"
+
+# Kiểm tra cấu trúc bảng transactions
+docker exec -it cassandra cqlsh -e "DESCRIBE TABLE banking.transactions;"
+
+# Vào cqlsh để test keyspace
+docker exec -i cassandra cqlsh 
+# để thoát ra nhấn Ctrl + D
 ```
 
-## Hướng dẫn chạy:
-
-### Cách 1: Chạy toàn bộ bằng Docker (khuyến nghị)
-```bash
-# Từ thư mục gốc, dựng tất cả services (Cassandra + Backend + Frontend)
-docker-compose up -d
-
-# Xem logs để kiểm tra
-docker-compose logs -f
+Kết quả mong đợi:
 ```
+account_id          | transaction_time      | transaction_id | type | amount | description
+--------------------+-----------------------+----------------+------+--------+-------------
+(primary key: account_id, transaction_time, transaction_id)
+```
+
+
 
 Truy cập ứng dụng tại:
 - **Frontend:** http://localhost:5173
 - **Backend API:** http://localhost:3000
 
-### Cách 2: Chạy local (thủ công)
 
 #### 1. Khởi động Cassandra
 ```bash
@@ -91,13 +92,6 @@ Truy cập ứng dụng tại:
 docker-compose up -d cassandra
 ```
 
-#### 2. Khởi tạo database (nếu chưa làm ở bước setup)
-```bash
-cqlsh -f database/keyspace.cql
-cqlsh -f database/init.cql
-cqlsh -f database/ttl_config.cql
-cqlsh -f database/mv_setup.cql
-```
 
 #### 3. Chạy Backend
 ```bash
