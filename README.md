@@ -22,6 +22,20 @@ BACKEND_PORT=3000
 FRONTEND_PORT=5173
 ```
 
+Tạo file `.env` trong frontend với các biến sau:
+```env
+# frontend/.env
+VITE_API_URL=http://localhost:3000/api
+```
+
+Tạo file `.env` trong backend với các biến sau:
+```env
+CASSANDRA_HOST=127.0.0.1
+CASSANDRA_PORT=9042
+CASSANDRA_DC=datacenter1
+CASSANDRA_KEYSPACE=banking
+```
+
 #### 3. Cài đặt dependencies
 
 **Backend:**
