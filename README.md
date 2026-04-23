@@ -36,17 +36,14 @@ cd frontend
 npm install
 ```
 
-#### 4. Cài đặt Cassandra (chọn 1 trong 2 cách)
+#### 4. Cài đặt Cassandra
 
-**Cách 1: Dùng Docker (khuyến nghị)**
+**Dùng Docker (khuyến nghị)**
 ```bash
 # Từ thư mục gốc
 docker compose up -d cassandra
 ```
 
-**Cách 2: Cài đặt local** (nặng nên không khuyến nghị)
-- Tải và cài đặt Cassandra từ https://cassandra.apache.org/_/download.html
-- Khởi động Cassandra service
 
 #### 5. Khởi tạo database
 ```bash
@@ -78,9 +75,6 @@ Truy cập ứng dụng tại:
 ```bash
 # Nếu dùng Docker chỉ cho Cassandra
 docker-compose up -d cassandra
-
-# Hoặc khởi động Cassandra local đã cài đặt
-# Đảm bảo Cassandra đang chạy ở port 9042
 ```
 
 #### 2. Khởi tạo database (nếu chưa làm ở bước setup)

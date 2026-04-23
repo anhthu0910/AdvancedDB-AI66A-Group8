@@ -11,8 +11,11 @@
   "license": "ISC",
   "dependencies": {
     "cassandra-driver": "^4.8.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1"
+    "swagger-ui-express": "^5.0.1",
+    "uuid": "^14.0.0"
   }
 }
