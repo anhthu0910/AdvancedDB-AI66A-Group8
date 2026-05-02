@@ -1,20 +1,19 @@
-# Hướng dẫn setup:
+## Hướng dẫn setup:
 
-## A. Yêu cầu hệ thống
+### Yêu cầu hệ thống
 - Docker & Docker Compose
 - Node.js >= 18.x (nếu chạy local không dùng Docker)
 - npm hoặc yarn
-- axios
 
-## B. Các bước cài đặt
+### Các bước cài đặt
 
-### 1. Clone repository và di chuyển vào thư mục dự án
+#### 1. Clone repository và di chuyển vào thư mục dự án
 ```bash
 git clone <repository-url>
 cd AdvancedDB-AI66A-Group8
 ```
 
-### 2. Tạo file biến môi trường
+#### 2. Tạo file biến môi trường
 Tạo file `.env` trong thư mục gốc với các biến sau:
 ```env
 CASSANDRA_HOST=localhost
@@ -23,21 +22,7 @@ BACKEND_PORT=3000
 FRONTEND_PORT=5173
 ```
 
-Tạo file `.env` trong frontend với các biến sau:
-```env
-# frontend/.env
-VITE_API_URL=http://localhost:3000/api
-```
-
-Tạo file `.env` trong backend với các biến sau:
-```env
-CASSANDRA_HOST=127.0.0.1
-CASSANDRA_PORT=9042
-CASSANDRA_DC=datacenter1
-CASSANDRA_KEYSPACE=banking
-```
-
-### 3. Cài đặt dependencies
+#### 3. Cài đặt dependencies
 
 **Backend:**
 ```bash
@@ -51,56 +36,80 @@ cd frontend
 npm install
 ```
 
-### 4. Khởi tạo database
-
-**Dùng Docker**
+#### 4. Khởi động Cassandra
 ```bash
 # Từ thư mục gốc
 docker-compose up -d cassandra
 ```
+Chờ khoảng 30-60s để docker khởi động. Sau đó kiểm tra trạng thái docker container:
+``` bash
+dock ps
+```
+Nếu thấy trạng thái `healthy` là đã khởi động thành công
 
-Verify schema đã được tạo:
+#### 5. Chạy database
+Sau khi container đã healthy:
 ```bash
-# Kiểm tra keyspace có tồn tại không
-docker exec -it cassandra cqlsh -e "DESCRIBE KEYSPACES;"
-
-# Kiểm tra cấu trúc bảng transactions
-docker exec -it cassandra cqlsh -e "DESCRIBE TABLE banking.transactions;"
-
-# Vào cqlsh để test keyspace
-docker exec -i cassandra cqlsh 
-# để thoát ra nhấn Ctrl + D
+# Kết nối vào Cassandra và chạy các script theo thứ tự:
+docker exec -i cassandra cqlsh < database/keyspace.cql
+docker exec -i cassandra cqlsh < database/schema.cql
+docker exec -i cassandra cqlsh < database/mv_setup.cql
 ```
 
-Kết quả mong đợi:
+Hoặc gộp 1 lệnh:
+
 ```
-account_id          | transaction_time      | transaction_id | type | amount | description
---------------------+-----------------------+----------------+------+--------+-------------
-(primary key: account_id, transaction_time, transaction_id)
+bashcat database/keyspace.cql database/schema.cql database/mv_setup.cql \
+  | docker exec -i cassandra cqlsh
 ```
 
+**Lưu ý về docker-compose:**
 
+Cassandra official Docker image không tự chạy file .cql khi khởi động
+(không giống PostgreSQL có docker-entrypoint-initdb.d).
+Phải chạy script thủ công sau khi container healthy, hoặc dùng
+entrypoint script wrapper.
+
+### Keyspace & Biến môi trường:
+| Biến | Giá trị |
+|-----------|-----------|
+| CASSANDRA_KEYSPACE | financial_ledger|
+| CASSANDRA_DC | datacenter1 |
+| CASSANDRA_HOST | localhost (hoặc cassandra nếu trong Docker network) |
+
+### Tóm tắt thiết kế schema:
+```
+transactions
+├── PARTITION KEY:   account_id         → gom giao dịch 1 tài khoản vào 1 node
+├── CLUSTERING KEY1: transaction_time DESC → giao dịch mới đọc trước
+├── CLUSTERING KEY2: transaction_id     → tránh overwrite, idempotent insert
+├── TTL:             1 năm (31536000s)  → tự xóa log cũ
+└── Compaction:      TWCS               → tối ưu time-series, hiệu quả với TTL
+
+transactions_by_type (Materialized View)
+└── PARTITION KEY:   type               → filter nhanh theo loại giao dịch
+```
+
+## Hướng dẫn chạy:
+
+### Cách 1:
 
 Truy cập ứng dụng tại:
 - **Frontend:** http://localhost:5173
 - **Backend API:** http://localhost:3000
 
+### Cách 2: Chạy local (thủ công)
 
-#### 1. Khởi động Cassandra
-```bash
-# Nếu dùng Docker chỉ cho Cassandra
-docker-compose up -d cassandra
-```
+#### 1. Khởi động container và thực hiện các bước trong hướng dẫn setup
 
-
-#### 3. Chạy Backend
+#### 2. Chạy Backend
 ```bash
 cd backend
 npm start
 # Server sẽ chạy tại http://localhost:3000
 ```
 
-#### 4. Chạy Frontend (ở terminal mới)
+#### 3. Chạy Frontend (ở terminal mới)
 ```bash
 cd frontend
 npm run dev
@@ -147,34 +156,31 @@ financial-ledger-cassandra/
 ├── .env                          # Biến môi trường (tự tạo vì đã gitignore)
 ├── docker-compose.yml            # Dựng Cassandra + Backend + Frontend (1 lệnh)
 │
-├── database/                     # 🟢 LÂN (DB Architect)
-│   ├── keyspace.cql              # CREATE KEYSPACE IF NOT EXISTS ...
-│   ├── init.cql                  # Bảng chính + Partition/Clustering Key
-│   ├── ttl_config.cql            # Cấu hình TTL 1 năm (USING TTL hoặc trigger)
+├── database/                     
+│   ├── keyspace.cql             
 │   ├── mv_setup.cql              # Materialized View cho thống kê loại giao dịch
-│   └── seeds/                    # Dữ liệu mẫu (nếu cần test nhanh)
-│       └── mock_accounts.cql
+│   ├── 
+│   └── schema.cql
 │
 ├── backend/                      # 🟡 KHANG + 🟠 HIỀN (Chung 1 Express App)
 │   ├── package.json
-|   ├── server.js             # Khởi tạo HTTP server + gắn Socket.io
-|   ├── index.js              
 │   ├── src/
-│   │   ├── query/                      # 🟠 Hiền 
-│   │   │   ├── queryController.js      # 
-│   │   │   ├── query.js                # GET /api/transactions, filter
-│   │   │   ├── socket.js               # Socket.io server, broadcast batch
-│   │   │   └── throughputTracker.js    # GET /api/transactions, filter
-│   │   ├── ingestion/                  🟡 KHANG:
-│   │   │   ├── dataGenerator.js        # Faker + mock logic 
+│   │   ├── server.js             # Khởi tạo HTTP server + gắn Socket.io
+│   │   ├── config/
+│   │   │   └── db.js             # Cassandra Client Singleton (dùng chung)
+│   │   ├── routes/
+│   │   │   ├── ingestion.js      # 🟡 KHANG: POST /api/transactions/bulk
+│   │   │   └── query.js          # 🟠 HIỀN: GET /api/transactions, filter
+│   │   ├── controllers/
 │   │   │   ├── ingestionController.js
-│   │   │   ├── ingestion.js            # POST /api/transactions/bulk
-│   │   │   └── throughputTracker.js    # Tính real-time tx/s 
-│   │   ├── shared
-│   │   │   ├── config/
-│   │   │   |   └── db.js             # Cassandra Client Singleton (dùng chung)
-│   │   │   └── utils/
-│   │   │       └── response.js       # Chuẩn hóa JSON response & error handling
+│   │   │   └── queryController.js
+│   │   ├── services/
+│   │   │   ├── dataGenerator.js  # Faker + mock logic (Khang)
+│   │   │   └── throughputTracker.js  # Tính real-time tx/s (Khang)
+│   │   ├── ws/
+│   │   │   └── socket.js         # 🟠 HIỀN: Socket.io server, broadcast batch
+│   │   └── utils/
+│   │       └── response.js       # Chuẩn hóa JSON response & error handling
 │   └── docs/
 │       └── openapi.yaml          # Swagger contract (🟠 Hiền chủ trì)
 │

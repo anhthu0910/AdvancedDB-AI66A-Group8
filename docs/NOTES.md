@@ -1,0 +1,2 @@
+- Thêm bảng database: ~5 bảng
+- Có phần so sánh cassandra hơn gì postgresql trong những bài toán này
