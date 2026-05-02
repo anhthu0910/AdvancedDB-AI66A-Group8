@@ -155,30 +155,26 @@ financial-ledger-cassandra/
 │   └── seeds/                    # Dữ liệu mẫu (nếu cần test nhanh)
 │       └── mock_accounts.cql
 │
-├── backend/                      # 🟡 KHANG + 🟠 HIỀN (Chung 1 Express App)
-│   ├── package.json
-|   ├── server.js             # Khởi tạo HTTP server + gắn Socket.io
-|   ├── index.js              
-│   ├── src/
-│   │   ├── query/                      # 🟠 Hiền 
-│   │   │   ├── queryController.js      # 
-│   │   │   ├── query.js                # GET /api/transactions, filter
-│   │   │   ├── socket.js               # Socket.io server, broadcast batch
-│   │   │   └── throughputTracker.js    # GET /api/transactions, filter
-│   │   ├── ingestion/                  🟡 KHANG:
-│   │   │   ├── dataGenerator.js        # Faker + mock logic 
-│   │   │   ├── ingestionController.js
-│   │   │   ├── ingestion.js            # POST /api/transactions/bulk
-│   │   │   └── throughputTracker.js    # Tính real-time tx/s 
-│   │   ├── shared
-│   │   │   ├── config/
-│   │   │   |   └── db.js             # Cassandra Client Singleton (dùng chung)
-│   │   │   └── utils/
-│   │   │       └── response.js       # Chuẩn hóa JSON response & error handling
-│   └── docs/
-│       └── openapi.yaml          # Swagger contract (🟠 Hiền chủ trì)
+├── backend/
+|   ├── src/
+|   │   ├── app.js                  ← Entry point: Express + Socket.IO + graceful shutdown
+|   │   ├── config/env.js           ← Tập trung biến môi trường
+|   │   ├── db/
+|   │   │   ├── client.js           ← Cassandra singleton, connection pool, helpers
+|   │   │   └── queries.js          ← Toàn bộ CQL (1 nơi duy nhất, khớp chính xác schema)
+|   │   ├── seed/index.js           ← Sinh dữ liệu lớn cho cả 10 bảng
+|   │   ├── services/
+|   │   │   ├── transactionService.js   ← Read/write transactions + MV query
+|   │   │   ├── accountService.js       ← Accounts, summary, methods, alerts, notifs
+|   │   │   └── ingestionService.js     ← Stream ~500 tx/s dùng Promise.all
+|   │   ├── controllers/ (3 file)
+|   │   ├── routes/index.js         ← Toàn bộ REST endpoints
+|   │   ├── middleware/errorHandler.js
+|   │   └── utils/socketHandler.js  ← stream:start / stream:stop events
+|   ├── .env.example
+|   └── package.json
 │
-├── frontend/                     # 🔵 THƯ (Frontend UX/UI)
+├── frontend/                     
 │   ├── package.json
 │   ├── vite.config.js
 │   ├── index.html
