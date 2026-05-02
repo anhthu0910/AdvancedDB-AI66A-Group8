@@ -28,34 +28,34 @@ Hệ thống mô phỏng một ledger giao dịch ngân hàng hiệu năng cao, 
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Transaction Explorer UI                   │
+│                 Transaction Explorer UI                     │
 │                                                             │
-│   ┌─────────────────────┐   ┌─────────────────────────┐    │
-│   │   Terminal Panel    │   │    Explorer Panel       │    │
-│   │  (Ingestion Stream) │   │  (Query by account_id)  │    │
-│   │                     │   │                         │    │
-│   │  [Tạo luồng GD]     │   │  account_id = [ACC001]  │    │
-│   │  ~500 tx/giây       │   │  → sao kê tức thì       │    │
-│   │  Socket.IO real-time│   │  → filter theo type/date│    │
-│   └─────────────────────┘   └─────────────────────────┘    │
-└───────────────────────┬─────────────────┬───────────────────┘
+│    ┌─────────────────────┐   ┌─────────────────────────┐    │
+│    │   Terminal Panel    │   │    Explorer Panel       │    │
+│    │  (Ingestion Stream) │   │  (Query by account_id)  │    │
+│    │                     │   │                         │    │
+│    │  [Tạo luồng GD]     │   │  account_id = [ACC001]  │    │
+│    │  ~500 tx/giây       │   │  → sao kê tức thì       │    │
+│    │  Socket.IO real-time│   │  → filter theo type/date│    │
+│    └─────────────────────┘   └─────────────────────────┘    │
+└───────────────────────┬──────────────────┬──────────────────┘
                         │ REST / WebSocket │
-┌───────────────────────▼─────────────────▼───────────────────┐
+┌───────────────────────▼──────────────────▼───────────────────┐
 │                   Express + Socket.IO (Node.js)              │
 │  POST /ingestion/batch    GET /transactions/:accountId       │
 │  Socket: stream:start     GET /transactions/by-type/:type    │
-└───────────────────────────────────┬─────────────────────────┘
+└───────────────────────────────────┬──────────────────────────┘
                                     │ cassandra-driver
-┌───────────────────────────────────▼─────────────────────────┐
+┌───────────────────────────────────▼──────────────────────────┐
 │                     Apache Cassandra 4.1                     │
-│                                                             │
-│   Keyspace: ledger         │  Materialized View:            │
-│   10 bảng                  │  transactions_by_type          │
-│                            │                                │
-│   Partition Key: account_id│  Partition Key: type           │
-│   → gom data 1 TK = 1 node │  → query theo loại GD O(1)    │
-│   → read sao kê O(1)       │                                │
-└─────────────────────────────────────────────────────────────┘
+│                                                              │
+│   Keyspace: ledger         │  Materialized View:             │
+│   10 bảng                  │  transactions_by_type           │
+│                            │                                 │
+│   Partition Key: account_id│  Partition Key: type            │
+│   → gom data 1 TK = 1 node │  → query theo loại GD O(1)      │
+│   → read sao kê O(1)       │                                 │
+└──────────────────────────────────────────────────────────────┘
 ```
 
 ### Tính năng chính
@@ -233,6 +233,33 @@ Kiểm tra trạng thái container:
 # Xem trạng thái container
 docker ps 
 ```
+Verify schema đã được tạo:
+```bash
+# Kiểm tra keyspace có tồn tại không
+docker exec -it cassandra cqlsh -e "DESCRIBE KEYSPACES;"
+
+# Kiểm tra cấu trúc bảng transactions
+docker exec -it cassandra cqlsh -e "DESCRIBE TABLE banking.transactions;"
+
+# Vào cqlsh để test keyspace
+docker exec -i cassandra cqlsh 
+# để thoát ra nhấn Ctrl + D
+```
+
+Kết quả mong đợi:
+```
+account_id          | transaction_time      | transaction_id | type | amount | description
+--------------------+-----------------------+----------------+------+--------+-------------
+(primary key: account_id, transaction_time, transaction_id)
+```
+
+
+
+Truy cập ứng dụng tại:
+- **Frontend:** http://localhost:5173
+- **Backend API:** http://localhost:3000
+
+
 
 ### Bước 3 — Theo dõi tiến trình
 
@@ -529,25 +556,25 @@ npm run dev
 ### 8.2Giao diện — Transaction Explorer
 
 ```
-┌─────────────────────────────────────────────────────────┐
+┌──────────────────────────────────────────────────────────┐
 │  ◈ Financial Ledger    [Transaction Explorer]  ● ledger  │
-├─────────────────────────┬───────────────────────────────┤
-│                         │                               │
-│   cassandra@ledger:~$   │  Transaction Explorer         │
-│                         │  account_id = [        ] QUERY│
-│   ● LIVE   500 tx/s     │                               │
-│                         │  ┌─ ACC000001 ──────────────┐ │
-│   [Slow][Normal][Fast]  │  │ CHECKING  15,000,000 ₫   │ │
-│   [Tạo luồng giao dịch] │  └──────────────────────────┘ │
-│                         │                               │
-│  0001 [12:34:01] ACC... │  [ALL][DEP][WIT][TRA][PAY]... │
-│  0002 [12:34:01] ACC... │                               │
-│  0003 [12:34:01] ACC... │  txn_id  time   type  amount  │
-│  0004 [12:34:02] ACC... │  a3f8… 12:34  DEPOSIT  +5M ₫  │
-│  0005 [12:34:02] ACC... │  b7c2… 12:33  TRANSFER ↔2M ₫  │
-│  ...                    │  ...                          │
-│                         │                       12ms ✓  │
-└─────────────────────────┴───────────────────────────────┘
+├─────────────────────────┬────────────────────────────────┤
+│                         │                                │
+│   cassandra@ledger:~$   │  Transaction Explorer          │
+│                         │  account_id = [        ] QUERY │
+│   ● LIVE   500 tx/s     │                                │
+│                         │  ┌─ ACC000001 ──────────────┐  │
+│   [Slow][Normal][Fast]  │  │ CHECKING  15,000,000 ₫   │  │
+│   [Tạo luồng giao dịch] │  └──────────────────────────┘  │
+│                         │                                │
+│  0001 [12:34:01] ACC... │  [ALL][DEP][WIT][TRA][PAY]...  │
+│  0002 [12:34:01] ACC... │                                │
+│  0003 [12:34:01] ACC... │  txn_id  time   type  amount   │
+│  0004 [12:34:02] ACC... │  a3f8… 12:34  DEPOSIT  +5M ₫   │
+│  0005 [12:34:02] ACC... │  b7c2… 12:33  TRANSFER ↔2M ₫   │
+│  ...                    │  ...                           │
+│                         │                       12ms ✓   │
+└─────────────────────────┴────────────────────────────────┘
 ```
 
 **Nửa trái — Terminal Panel:**
@@ -607,7 +634,7 @@ cd frontend && npm run dev
 [socketHandler.js — server]
        │
        ▼ ingestionService.startStream()
-       │  ┌─ Loop mỗi 100ms ─────────────────────────┐
+       │  ┌─ Loop mỗi 100ms ──────────────────────────┐
        │  │  Tạo 50 GD ngẫu nhiên (faker)             │
        │  │  Promise.all(50 × client.execute(INSERT)) │
        │  │  Đo thời gian → tính TPS                  │
@@ -662,6 +689,14 @@ cd frontend && npm run dev
 
 ## 10. Biến môi trường
 
+### `.env`
+```env
+CASSANDRA_HOST=localhost
+CASSANDRA_PORT=9042
+BACKEND_PORT=3000
+FRONTEND_PORT=5173
+```
+
 ### `backend/.env`
 
 ```env
@@ -677,6 +712,12 @@ NODE_ENV=development
 ```
 
 > ⚠️ **Quan trọng:** `CASSANDRA_DC` phải khớp **chính xác** với tên datacenter trong Cassandra. Kiểm tra bằng: `docker exec cassandra nodetool status`
+
+### `frontend/.env`
+
+```env
+VITE_API_URL=http://localhost:3000/api
+```
 
 ### Kiểm tra kết nối
 
@@ -739,73 +780,6 @@ docker compose up -d            # Khởi động lại
 
 
 
-## B. Các bước cài đặt
-
-### 1. Clone repository và di chuyển vào thư mục dự án
-```bash
-git clone <repository-url>
-cd AdvancedDB-AI66A-Group8
-```
-
-### 2. Tạo file biến môi trường
-Tạo file `.env` trong thư mục gốc với các biến sau:
-```env
-CASSANDRA_HOST=localhost
-CASSANDRA_PORT=9042
-BACKEND_PORT=3000
-FRONTEND_PORT=5173
-```
-
-Tạo file `.env` trong frontend với các biến sau:
-```env
-# frontend/.env
-VITE_API_URL=http://localhost:3000/api
-```
-
-Tạo file `.env` trong backend với các biến sau:
-```env
-CASSANDRA_HOST=127.0.0.1
-CASSANDRA_PORT=9042
-CASSANDRA_DC=datacenter1
-CASSANDRA_KEYSPACE=banking
-```
-
-
-### 4. Khởi tạo database
-
-**Dùng Docker**
-```bash
-# Từ thư mục gốc
-docker-compose up -d cassandra
-```
-
-Verify schema đã được tạo:
-```bash
-# Kiểm tra keyspace có tồn tại không
-docker exec -it cassandra cqlsh -e "DESCRIBE KEYSPACES;"
-
-# Kiểm tra cấu trúc bảng transactions
-docker exec -it cassandra cqlsh -e "DESCRIBE TABLE banking.transactions;"
-
-# Vào cqlsh để test keyspace
-docker exec -i cassandra cqlsh 
-# để thoát ra nhấn Ctrl + D
-```
-
-Kết quả mong đợi:
-```
-account_id          | transaction_time      | transaction_id | type | amount | description
---------------------+-----------------------+----------------+------+--------+-------------
-(primary key: account_id, transaction_time, transaction_id)
-```
-
-
-
-Truy cập ứng dụng tại:
-- **Frontend:** http://localhost:5173
-- **Backend API:** http://localhost:3000
-
-
 
 
 #### 3. Chạy Backend
@@ -854,12 +828,4 @@ k6 run bulk_insert.js
 - Materialized View cho thống kê loại giao dịch được tạo tự động sau khi chạy `mv_setup.cql`
 - TTL 1 năm được áp dụng tự động cho các giao dịch cũ
 
-# Mô tả
-
-## 2. Backend
-
-
-
-
-
-## 4. Load test:
+## Load test:
