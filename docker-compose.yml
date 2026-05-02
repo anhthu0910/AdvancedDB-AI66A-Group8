@@ -1,23 +1,88 @@
 services:
+
+  # ──────────────────────────────────────────────────────────
+  # Cassandra 4.1 — Single node cho dev/demo
+  # ──────────────────────────────────────────────────────────
   cassandra:
     image: cassandra:4.1
     container_name: cassandra
     ports:
       - "9042:9042"
-    volumes: # Cassandra tự chạy schema.cql khi khởi động lần đầu
-      - ./database/schema.cql:/docker-entrypoint-initdb.d/01-schema.cql
+    volumes:
       - cassandra_data:/var/lib/cassandra
+      # Script init — chạy sau khi Cassandra healthy (xem cassandra-init service)
+      - ./database:/database:ro
     environment:
-      - CASSANDRA_CLUSTER_NAME=MyDockerCluster
-      - CASSANDRA_DC=DC1
-      - CASSANDRA_RACK=RACK1
+      - CASSANDRA_CLUSTER_NAME=LedgerCluster
+      # QUAN TRỌNG: phải khớp với CASSANDRA_DC trong backend/.env
+      - CASSANDRA_DC=datacenter1
+      - CASSANDRA_RACK=rack1
       - MAX_HEAP_SIZE=512M
       - HEAP_NEWSIZE=100M
     healthcheck:
-      test: ["CMD-SHELL", "nodetool status | grep UN"]
-      interval: 30s
+      test: ["CMD-SHELL", "cqlsh -e 'SELECT now() FROM system.local' 2>/dev/null && echo OK"]
+      interval: 15s
       timeout: 10s
-      retries: 5
+      retries: 10
+      start_period: 60s
+
+  # ──────────────────────────────────────────────────────────
+  # Init job — chạy schema + indexes + MV sau khi Cassandra healthy
+  # Tách riêng vì Cassandra không có docker-entrypoint-initdb.d như Postgres
+  # ──────────────────────────────────────────────────────────
+  cassandra-init:
+    image: cassandra:4.1
+    container_name: cassandra-init
+    depends_on:
+      cassandra:
+        condition: service_healthy
+    volumes:
+      - ./database:/database:ro
+    entrypoint: ["/bin/bash", "-c"]
+    command: >
+      "echo 'Running schema init...' &&
+       cqlsh cassandra -f /database/keyspace.cql &&
+       cqlsh cassandra -f /database/schema.cql &&
+       cqlsh cassandra -f /database/mv_setup.cql &&
+       cqlsh cassandra -f /database/indexes.cql &&
+       echo 'Schema init complete.'"
+    restart: "no"
+
+  # ──────────────────────────────────────────────────────────
+  # Backend — Node.js Express + Socket.IO
+  # ──────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend
+    ports:
+      - "3000:3000"
+    depends_on:
+      cassandra:
+        condition: service_healthy
+    environment:
+      - CASSANDRA_HOST=cassandra
+      - CASSANDRA_PORT=9042
+      - CASSANDRA_KEYSPACE=ledger
+      - CASSANDRA_DC=datacenter1
+      - PORT=3000
+      - NODE_ENV=production
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────────────────
+  # Frontend — Vite build served bởi nginx
+  # ──────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
 
 volumes:
   cassandra_data:

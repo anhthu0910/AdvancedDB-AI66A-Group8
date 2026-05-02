@@ -218,9 +218,12 @@ server {
 
 ```bash
 # Từ thư mục gốc
-docker-compose up -d cassandra
+docker compose up -d 
 ```
-
+Lần đầu compose up thì chạy:
+```bash
+docker compose up cassandra-init
+```
 Docker sẽ tự động:
 1. Kéo image Cassandra 4.1
 2. Khởi động Cassandra và chờ healthy (~60 giây)
@@ -228,18 +231,20 @@ Docker sẽ tự động:
 4. Build và khởi động backend Node.js
 5. Build và khởi động frontend Vite + nginx
 
-Kiểm tra trạng thái container:
+**Kiểm tra trạng thái container:**
 ```bash
 # Xem trạng thái container
 docker ps 
 ```
+Nếu cột STATUS hiển thị trạng thái (healthy) nghĩa là cassandra đã khởi động thành công
+
 Verify schema đã được tạo:
 ```bash
 # Kiểm tra keyspace có tồn tại không
 docker exec -it cassandra cqlsh -e "DESCRIBE KEYSPACES;"
 
 # Kiểm tra cấu trúc bảng transactions
-docker exec -it cassandra cqlsh -e "DESCRIBE TABLE banking.transactions;"
+docker exec -it cassandra cqlsh -e "DESCRIBE TABLE ledger.transactions;"
 
 # Vào cqlsh để test keyspace
 docker exec -i cassandra cqlsh 
@@ -298,6 +303,13 @@ docker exec backend node src/seed/index.js --users=200 --accounts=600 --txns=500
 ```bash
 docker compose down          # Dừng, giữ data
 docker compose down -v       # Dừng và xóa toàn bộ data Cassandra
+```
+Nếu không được:
+```bash
+sudo aa-remove-unknown
+sudo systemctl daemon-reload
+sudo systemctl restart docker
+docker compose down -v
 ```
 
 ---
