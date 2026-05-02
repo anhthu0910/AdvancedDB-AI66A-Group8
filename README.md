@@ -157,20 +157,20 @@ financial-ledger-cassandra/
 │
 ├── backend/
 |   ├── src/
-|   │   ├── app.js                  ← Entry point: Express + Socket.IO + graceful shutdown
-|   │   ├── config/env.js           ← Tập trung biến môi trường
+|   │   ├── app.js                  # Entry point — Express + Socket.IO
+|   │   ├── config/env.js           # Tập trung biến môi trường
 |   │   ├── db/
-|   │   │   ├── client.js           ← Cassandra singleton, connection pool, helpers
-|   │   │   └── queries.js          ← Toàn bộ CQL (1 nơi duy nhất, khớp chính xác schema)
-|   │   ├── seed/index.js           ← Sinh dữ liệu lớn cho cả 10 bảng
+|   │   │   ├── client.js           # Cassandra singleton, connection pool, helpers
+|   │   │   └── queries.js          # Toàn bộ CQL (1 nơi duy nhất, khớp chính xác schema)
+|   │   ├── seed/index.js           # Sinh dữ liệu lớn cho cả 10 bảng
 |   │   ├── services/
-|   │   │   ├── transactionService.js   ← Read/write transactions + MV query
-|   │   │   ├── accountService.js       ← Accounts, summary, methods, alerts, notifs
-|   │   │   └── ingestionService.js     ← Stream ~500 tx/s dùng Promise.all
+|   │   │   ├── transactionService.js   # Logic đọc/ghi transactions + MV query
+|   │   │   ├── accountService.js       # Logic đọc accounts, summary, methods, alerts, notifs
+|   │   │   └── ingestionService.js     # Stream ghi liên tục ~500 tx/s cho demo
 |   │   ├── controllers/ (3 file)
-|   │   ├── routes/index.js         ← Toàn bộ REST endpoints
+|   │   ├── routes/index.js         # Toàn bộ route definitions - REST endpoints
 |   │   ├── middleware/errorHandler.js
-|   │   └── utils/socketHandler.js  ← stream:start / stream:stop events
+|   │   └── utils/socketHandler.js  ← Socket.IO events: stream:start / stream:stop events
 |   ├── .env.example
 |   └── package.json
 │
@@ -206,3 +206,69 @@ financial-ledger-cassandra/
     ├── data-modeling.md          # Giải thích Partition/Clustering, TTL, MV
     └── benchmark-results.md      # k6 output, EXPLAIN/TRACING logs
 ```
+
+# Mô tả
+
+## 2. Backend
+
+### 2.1 Setup:
+
+```
+cd backend
+cp .env.example .env
+npm install
+
+# Chạy seed (cần Cassandra + schema đã được init)
+npm run seed
+# Hoặc seed số lớn:
+npm run seed:large   # 200 users, 600 accounts, 50000 txns
+
+# Chạy dev server
+npm run dev
+```
+
+### 2.2 API Endpoints
+
+| Method | Path | Mô tả |
+|--------|------|-------|
+| GET | `/api/health` | Health check |
+| GET | `/api/accounts/:accountId` | Thông tin tài khoản |
+| GET | `/api/users/:userId/accounts` | Tất cả TK của user |
+| GET | `/api/accounts/:accountId/summary` | Báo cáo ngày |
+| GET | `/api/accounts/:accountId/methods` | Phương thức thanh toán |
+| GET | `/api/accounts/:accountId/notifications` | Thông báo |
+| GET | `/api/accounts/:accountId/alerts` | Cảnh báo fraud |
+| GET | `/api/transactions/:accountId` | Lịch sử GD (Partition Key read) |
+| GET | `/api/transactions/by-type/:type` | GD theo loại (Materialized View) |
+| POST | `/api/transactions` | Tạo giao dịch mới |
+| POST | `/api/ingestion/batch` | Ghi 1 batch GD ngẫu nhiên |
+
+**Query params cho transactions:**
+- `?limit=50` — số row tối đa
+- `?from=2025-01-01&to=2025-01-31` — lọc theo khoảng thời gian
+
+### 2.3 Socket.IO Events
+
+```
+// Client → Server
+socket.emit('stream:start', { batchSize: 50, intervalMs: 100 });
+socket.emit('stream:stop');
+
+// Server → Client
+socket.on('stream:tick', ({ written, tps, elapsed_ms, items }) => { ... });
+socket.on('stream:error', ({ message }) => { ... });
+```
+
+### 2.4 Biến môi trường
+
+```env
+CASSANDRA_HOST=localhost
+CASSANDRA_PORT=9042
+CASSANDRA_KEYSPACE=ledger
+CASSANDRA_DC=datacenter1
+PORT=3000
+```
+
+#### 3. Frontend:
+
+#### 4. Load test:

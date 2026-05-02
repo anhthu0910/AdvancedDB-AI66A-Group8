@@ -1,21 +1,26 @@
 {
-  "name": "backend",
+  "name": "financial-ledger-backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "src/server.js",
+  "description": "Financial Transaction Ledger — Cassandra backend",
+  "main": "src/app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon src/app.js",
+    "start": "node src/app.js",
+    "seed": "node src/seed/index.js",
+    "seed:large": "node src/seed/index.js --users=200 --accounts=600 --txns=50000"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "cassandra-driver": "^4.8.0",
-    "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1",
-    "uuid": "^14.0.0"
+    "cassandra-driver": "^4.7.2",
+    "express": "^4.18.2",
+    "express-validator": "^7.0.1",
+    "socket.io": "^4.7.2",
+    "uuid": "^9.0.0",
+    "@faker-js/faker": "^8.3.1",
+    "dotenv": "^16.3.1",
+    "cors": "^2.8.5",
+    "morgan": "^1.10.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
   }
 }
