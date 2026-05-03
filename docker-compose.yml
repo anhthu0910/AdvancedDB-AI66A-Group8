@@ -12,7 +12,8 @@ services:
       - cassandra_data:/var/lib/cassandra
       # Script init — chạy sau khi Cassandra healthy (xem cassandra-init service)
       - ./database:/database:ro
-      - ./cassandra.yaml:/etc/cassandra/cassandra.yaml
+      - ./:/cassandra-config:ro
+    entrypoint: ["/bin/bash", "-c", "cp /cassandra-config/cassandra.yaml /etc/cassandra/cassandra.yaml && exec /usr/local/bin/docker-entrypoint.sh cassandra -f"]
     environment:
       - CASSANDRA_CLUSTER_NAME=LedgerCluster
       # QUAN TRỌNG: phải khớp với CASSANDRA_DC trong backend/.env
@@ -42,10 +43,10 @@ services:
     entrypoint: ["/bin/bash", "-c"]
     command: >
       "echo 'Running schema init...' &&
-       cqlsh cassandra -f /database/keyspace.cql &&
-       cqlsh cassandra -f /database/schema.cql &&
-       cqlsh cassandra -f /database/mv_setup.cql &&
-       cqlsh cassandra -f /database/indexes.cql &&
+       cqlsh cassandra --request-timeout=300 -f /database/keyspace.cql &&
+       cqlsh cassandra --request-timeout=300 -f /database/schema.cql &&
+       cqlsh cassandra --request-timeout=300 -f /database/mv_setup.cql &&
+       cqlsh cassandra --request-timeout=300 -f /database/indexes.cql &&
        echo 'Schema init complete.'"
     restart: "no"
 
