@@ -783,16 +783,52 @@ docker compose up -d            # Khởi động lại
 
 ---
 
+## 12. Khởi động toàn bộ chương trình:
+
+### Bước 1: Khởi động toàn bộ hệ thống
+Mở terminal, cd vào thư mục gốc của project (nơi có docker-compose.yml), rồi chạy:
+```bash
+docker compose up --build
+```
+
+Lần đầu sẽ mất 3–5 phút để build image. Sau đó Cassandra cần thêm 60–90 giây để khởi động hoàn toàn. Bạn biết mọi thứ ready khi thấy log:
+```
+cassandra-init  | Schema init complete.
+backend         | [Cassandra] Connected — keyspace: ledger
+backend         | [Server] Running on http://localhost:3000
+```
+
+**Lưu ý RAM:** Cassandra cần ít nhất 2 GB RAM được cấp cho Docker. Vào Docker Desktop → Settings → Resources → tăng Memory lên ≥ 4 GB nếu máy bạn đang để thấp.
+
+### Bước 2: Seed dữ liệu mẫu
+Sau khi backend đã connected, mở một terminal khác và chạy:
+```bash
+# Seed mặc định: 50 users, 150 accounts, ~30.000 transactions
+docker exec backend node src/seed/index.js
+
+# hoặc seed to hơn để demo throughput rõ hơn:
+docker exec backend node src/seed/index.js --users=200 --accounts=600 --txns=50000
+```
+
+Chờ đến khi thấy ✅ Seed hoàn tất là xong.
+
+### Bước 3 — Mở ứng dụng
+
+Truy cập [http://localhost:5173] trên trình duyệt.
+Để test nhanh backend có hoạt động không:
+
+```bash
+curl http://localhost:3000/api/health
+# → {"status":"ok","ts":"..."}
+
+# Lấy lịch sử giao dịch của account ACC000001
+curl http://localhost:3000/api/transactions/ACC000001
+```
 
 
 
 
-
-
-
-
-
-
+---
 
 #### 3. Chạy Backend
 ```bash

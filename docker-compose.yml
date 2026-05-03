@@ -12,6 +12,7 @@ services:
       - cassandra_data:/var/lib/cassandra
       # Script init — chạy sau khi Cassandra healthy (xem cassandra-init service)
       - ./database:/database:ro
+      - ./cassandra.yaml:/etc/cassandra/cassandra.yaml
     environment:
       - CASSANDRA_CLUSTER_NAME=LedgerCluster
       # QUAN TRỌNG: phải khớp với CASSANDRA_DC trong backend/.env
