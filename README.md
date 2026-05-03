@@ -825,55 +825,33 @@ curl http://localhost:3000/api/health
 curl http://localhost:3000/api/transactions/ACC000001
 ```
 
-
-
-
 ---
 
-#### 3. Chạy Backend
+## 13. Chạy toàn bộ chương trình (Quick Start)
+
+Dành cho những ai muốn chạy thử dự án trên máy cá nhân một cách nhanh nhất. (Yêu cầu máy đã cài đặt **Docker** và **Docker Compose**, nên cấp cho Docker tối thiểu 4GB RAM).
+
+**Bước 1: Khởi động hệ thống**
+Mở terminal tại thư mục gốc của dự án và chạy lệnh:
 ```bash
-cd backend
-npm start
-# Server sẽ chạy tại http://localhost:3000
+docker compose up --build -d
 ```
+*Lưu ý: Lần đầu tiên chạy sẽ mất khoảng 3-5 phút để tải các images và khởi động. Cassandra khởi động khá nặng nên hãy kiên nhẫn chờ đến khi các dịch vụ sẵn sàng.*
 
-#### 4. Chạy Frontend (ở terminal mới)
+**Bước 2: Tạo dữ liệu mẫu (Seed Data)**
+Khi hệ thống đã chạy lên (đợi khoảng 1-2 phút sau Bước 1), tiến hành sinh dữ liệu mẫu bằng lệnh:
 ```bash
-cd frontend
-npm run dev
-# Frontend sẽ chạy tại http://localhost:5173
+docker exec backend node src/seed/index.js
 ```
+*Lệnh này sẽ tự động sinh ra khoảng 40.000 dòng dữ liệu (Users, Accounts, Transactions...) và đẩy thẳng vào CSDL Cassandra.*
 
-### Kiểm tra và test hệ thống
+**Bước 3: Mở giao diện và trải nghiệm**
+- Mở trình duyệt và truy cập: [http://localhost:5173](http://localhost:5173)
+- Tại giao diện chính, bạn có thể nhấn nút **"Tạo luồng giao dịch"** (cạnh bảng Terminal) để xem hệ thống thực hiện đẩy liên tục hàng trăm giao dịch real-time mỗi giây.
+- Chuyển qua các tab "Tra cứu tài khoản", "Cảnh báo gian lận" để trải nghiệm các truy vấn trực tiếp xuống DB.
 
-#### 1. Test API ingestion (ghi giao dịch)
+**Bước 4: Dọn dẹp (Tùy chọn)**
+Khi không muốn chạy nữa và muốn xóa sạch toàn bộ data, bạn dùng lệnh:
 ```bash
-# Gửi request POST để thêm giao dịch mẫu
-curl -X POST http://localhost:3000/api/transactions/bulk \
-  -H "Content-Type: application/json" \
-  -d '{"account_id": "ACC001", "amount": 1000000, "type": "deposit"}'
+docker compose down -v
 ```
-
-#### 2. Test API query (đọc giao dịch)
-```bash
-# Truy vấn lịch sử giao dịch theo account_id
-curl http://localhost:3000/api/transactions?account_id=ACC001
-```
-
-#### 3. Chạy load test (tùy chọn)
-```bash
-cd load-test/k6
-k6 run bulk_insert.js
-```
-
-#### 4. Xem kết quả benchmark
-- Kết quả load test được lưu tại `load-test/results/`
-- Xem chi tiết tại `docs/benchmark-results.md`
-
-### Lưu ý
-- Đảm bảo Cassandra đã khởi động hoàn toàn trước khi chạy backend
-- File `.env` cần được cấu hình đúng trước khi chạy
-- Materialized View cho thống kê loại giao dịch được tạo tự động sau khi chạy `mv_setup.cql`
-- TTL 1 năm được áp dụng tự động cho các giao dịch cũ
-
-## Load test:
