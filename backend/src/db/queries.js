@@ -9,8 +9,8 @@ const Q = {};
 // ─── USERS ───────────────────────────────────────────────────────────────────
 Q.INSERT_USER = `
   INSERT INTO users
-    (user_id, full_name, email, phone, kyc_status, tier, created_at, metadata)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+    (user_id, full_name, email, phone, kyc_status, tier, created_at, updated_at, metadata)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
 Q.GET_USER = `SELECT * FROM users WHERE user_id = ?`;
 
