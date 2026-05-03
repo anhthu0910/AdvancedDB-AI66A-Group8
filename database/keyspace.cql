@@ -20,3 +20,5 @@ WITH REPLICATION = {
 AND DURABLE_WRITES = true;
 
 USE ledger;
+
+

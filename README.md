@@ -832,11 +832,37 @@ curl http://localhost:3000/api/transactions/ACC000001
 Dành cho những ai muốn chạy thử dự án trên máy cá nhân một cách nhanh nhất. (Yêu cầu máy đã cài đặt **Docker** và **Docker Compose**, nên cấp cho Docker tối thiểu 4GB RAM).
 
 **Bước 1: Khởi động hệ thống**
-Mở terminal tại thư mục gốc của dự án và chạy lệnh:
+1. Khởi động backend:
 ```bash
+cd backend
+
+npm install
+
+npm run dev
+```
+
+2. Khởi động frontend:
+```bash
+cd frontend
+
+npm install
+
+npm run dev
+# Terminal sẽ in: VITE ready at http://localhost:5173
+```
+
+3. Mở terminal tại thư mục gốc của dự án và chạy lệnh:
+```bash
+# cd về thư mục gốc trước đã
 docker compose up --build -d
 ```
-*Lưu ý: Lần đầu tiên chạy sẽ mất khoảng 3-5 phút để tải các images và khởi động. Cassandra khởi động khá nặng nên hãy kiên nhẫn chờ đến khi các dịch vụ sẵn sàng.*
+*Lưu ý: Lần đầu tiên chạy sẽ mất khoảng 3-5 phút để tải các images và khởi động. Cassandra khởi động khá nặng nên hãy kiên nhẫn chờ đến khi các dịch vụ sẵn sàng.* Các lần sau chỉ cần chạy:
+
+```bash
+docker compose up -d
+```
+Và chờ khoảng 1 phút rồi chạy tiếp bước 2.
+
 
 **Bước 2: Tạo dữ liệu mẫu (Seed Data)**
 Khi hệ thống đã chạy lên (đợi khoảng 1-2 phút sau Bước 1), tiến hành sinh dữ liệu mẫu bằng lệnh:
