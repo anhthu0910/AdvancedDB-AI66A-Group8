@@ -23,16 +23,18 @@ router.get('/accounts/:accountId/notifications', accCtrl.getNotifications);
 router.get('/accounts/:accountId/alerts',    accCtrl.getFraudAlerts);
 
 // ─── Transactions ────────────────────────────────────────────────────────────
+
+// *** FIX: specific route MUST come before the :accountId wildcard ***
+// Query qua Materialized View — theo loại giao dịch
+router.get('/transactions/by-type/:type',
+  param('type').isIn(['DEPOSIT', 'WITHDRAW', 'TRANSFER', 'PAYMENT', 'REFUND']),
+  txnCtrl.getByType);
+
 // Lịch sử theo account — Partition Key read O(1)
 router.get('/transactions/:accountId',
   param('accountId').notEmpty(),
   query('limit').optional().isInt({ min: 1, max: 500 }),
   txnCtrl.getByAccount);
-
-// Query qua Materialized View — theo loại giao dịch
-router.get('/transactions/by-type/:type',
-  param('type').isIn(['DEPOSIT', 'WITHDRAW', 'TRANSFER', 'PAYMENT', 'REFUND']),
-  txnCtrl.getByType);
 
 // Ghi 1 giao dịch
 router.post('/transactions',
