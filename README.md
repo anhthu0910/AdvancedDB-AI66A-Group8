@@ -218,7 +218,11 @@ server {
 
 ```bash
 # Từ thư mục gốc
-docker-compose up -d cassandra
+docker compose up -d 
+```
+Lần đầu compose up thì chạy:
+```bash
+docker compose up cassandra-init
 ```
 Chờ khoảng 30-60s để docker khởi động. Sau đó kiểm tra trạng thái docker container:
 ``` bash
@@ -233,13 +237,27 @@ Docker sẽ tự động:
 4. Build và khởi động backend Node.js
 5. Build và khởi động frontend Vite + nginx
 
-Kiểm tra trạng thái container:
+**Kiểm tra trạng thái container:**
 ```bash
 # Xem trạng thái container
 docker ps 
 ```
+Nếu cột STATUS hiển thị trạng thái (healthy) nghĩa là cassandra đã khởi động thành công
+
 Verify schema đã được tạo:
 ```bash
+# Kiểm tra keyspace có tồn tại không
+docker exec -it cassandra cqlsh -e "DESCRIBE KEYSPACES;"
+
+# Kiểm tra cấu trúc bảng transactions
+docker exec -it cassandra cqlsh -e "DESCRIBE TABLE ledger.transactions;"
+
+# Vào cqlsh để test keyspace
+docker exec -i cassandra cqlsh 
+# để thoát ra nhấn Ctrl + D
+```
+
+Kết quả mong đợi:
 # Kết nối vào Cassandra và chạy các script theo thứ tự:
 docker exec -i cassandra cqlsh < database/keyspace.cql
 docker exec -i cassandra cqlsh < database/schema.cql
@@ -328,6 +346,13 @@ docker exec backend node src/seed/index.js --users=200 --accounts=600 --txns=500
 ```bash
 docker compose down          # Dừng, giữ data
 docker compose down -v       # Dừng và xóa toàn bộ data Cassandra
+```
+Nếu không được:
+```bash
+sudo aa-remove-unknown
+sudo systemctl daemon-reload
+sudo systemctl restart docker
+docker compose down -v
 ```
 
 ---
@@ -801,61 +826,101 @@ docker compose up -d            # Khởi động lại
 
 ---
 
+## 12. Khởi động toàn bộ chương trình:
 
+### Bước 1: Khởi động toàn bộ hệ thống
+Mở terminal, cd vào thư mục gốc của project (nơi có docker-compose.yml), rồi chạy:
+```bash
+docker compose up --build
+```
 
+Lần đầu sẽ mất 3–5 phút để build image. Sau đó Cassandra cần thêm 60–90 giây để khởi động hoàn toàn. Bạn biết mọi thứ ready khi thấy log:
+```
+cassandra-init  | Schema init complete.
+backend         | [Cassandra] Connected — keyspace: ledger
+backend         | [Server] Running on http://localhost:3000
+```
 
+**Lưu ý RAM:** Cassandra cần ít nhất 2 GB RAM được cấp cho Docker. Vào Docker Desktop → Settings → Resources → tăng Memory lên ≥ 4 GB nếu máy bạn đang để thấp.
 
+### Bước 2: Seed dữ liệu mẫu
+Sau khi backend đã connected, mở một terminal khác và chạy:
+```bash
+# Seed mặc định: 50 users, 150 accounts, ~30.000 transactions
+docker exec backend node src/seed/index.js
 
+# hoặc seed to hơn để demo throughput rõ hơn:
+docker exec backend node src/seed/index.js --users=200 --accounts=600 --txns=50000
+```
 
+Chờ đến khi thấy ✅ Seed hoàn tất là xong.
 
+### Bước 3 — Mở ứng dụng
 
+Truy cập [http://localhost:5173] trên trình duyệt.
+Để test nhanh backend có hoạt động không:
 
+```bash
+curl http://localhost:3000/api/health
+# → {"status":"ok","ts":"..."}
 
+# Lấy lịch sử giao dịch của account ACC000001
+curl http://localhost:3000/api/transactions/ACC000001
+```
 
-#### 3. Chạy Backend
+---
+
+## 13. Chạy toàn bộ chương trình (Quick Start)
+
+Dành cho những ai muốn chạy thử dự án trên máy cá nhân một cách nhanh nhất. (Yêu cầu máy đã cài đặt **Docker** và **Docker Compose**, nên cấp cho Docker tối thiểu 4GB RAM).
+
+**Bước 1: Khởi động hệ thống**
+1. Khởi động backend:
 ```bash
 cd backend
-npm start
-# Server sẽ chạy tại http://localhost:3000
+
+npm install
+
+npm run dev
 ```
 
-#### 3. Chạy Frontend (ở terminal mới)
+2. Khởi động frontend:
 ```bash
 cd frontend
+
+npm install
+
 npm run dev
-# Frontend sẽ chạy tại http://localhost:5173
+# Terminal sẽ in: VITE ready at http://localhost:5173
 ```
 
-### Kiểm tra và test hệ thống
-
-#### 1. Test API ingestion (ghi giao dịch)
+3. Mở terminal tại thư mục gốc của dự án và chạy lệnh:
 ```bash
-# Gửi request POST để thêm giao dịch mẫu
-curl -X POST http://localhost:3000/api/transactions/bulk \
-  -H "Content-Type: application/json" \
-  -d '{"account_id": "ACC001", "amount": 1000000, "type": "deposit"}'
+# cd về thư mục gốc trước đã
+docker compose up --build -d
 ```
+*Lưu ý: Lần đầu tiên chạy sẽ mất khoảng 3-5 phút để tải các images và khởi động. Cassandra khởi động khá nặng nên hãy kiên nhẫn chờ đến khi các dịch vụ sẵn sàng.* Các lần sau chỉ cần chạy:
 
-#### 2. Test API query (đọc giao dịch)
 ```bash
-# Truy vấn lịch sử giao dịch theo account_id
-curl http://localhost:3000/api/transactions?account_id=ACC001
+docker compose up -d
 ```
+Và chờ khoảng 1 phút rồi chạy tiếp bước 2.
 
-#### 3. Chạy load test (tùy chọn)
+
+**Bước 2: Tạo dữ liệu mẫu (Seed Data)**
+Khi hệ thống đã chạy lên (đợi khoảng 1-2 phút sau Bước 1), tiến hành sinh dữ liệu mẫu bằng lệnh:
 ```bash
-cd load-test/k6
-k6 run bulk_insert.js
+docker exec backend node src/seed/index.js
 ```
+*Lệnh này sẽ tự động sinh ra khoảng 40.000 dòng dữ liệu (Users, Accounts, Transactions...) và đẩy thẳng vào CSDL Cassandra.*
 
-#### 4. Xem kết quả benchmark
-- Kết quả load test được lưu tại `load-test/results/`
-- Xem chi tiết tại `docs/benchmark-results.md`
+**Bước 3: Mở giao diện và trải nghiệm**
+- Mở trình duyệt và truy cập: [http://localhost:5173](http://localhost:5173)
+- Tại giao diện chính, bạn có thể nhấn nút **"Tạo luồng giao dịch"** (cạnh bảng Terminal) để xem hệ thống thực hiện đẩy liên tục hàng trăm giao dịch real-time mỗi giây.
+- Chuyển qua các tab "Tra cứu tài khoản", "Cảnh báo gian lận" để trải nghiệm các truy vấn trực tiếp xuống DB.
 
-### Lưu ý
-- Đảm bảo Cassandra đã khởi động hoàn toàn trước khi chạy backend
-- File `.env` cần được cấu hình đúng trước khi chạy
-- Materialized View cho thống kê loại giao dịch được tạo tự động sau khi chạy `mv_setup.cql`
-- TTL 1 năm được áp dụng tự động cho các giao dịch cũ
-
-## Load test:
+**Bước 4: Dọn dẹp (Tùy chọn)**
+Khi không muốn chạy nữa và muốn xóa sạch toàn bộ data, bạn dùng lệnh:
+```bash
+docker compose down -v
+```

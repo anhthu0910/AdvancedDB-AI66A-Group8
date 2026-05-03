@@ -20,3 +20,8 @@ WITH REPLICATION = {
 AND DURABLE_WRITES = true;
 
 USE ledger;
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> 162ac21380f0e5542bdf8babfa124ae7254cc0c5
