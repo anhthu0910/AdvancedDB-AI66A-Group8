@@ -49,14 +49,14 @@ export default function ExplorerPanel() {
           limit: f.limit,
           ...(f.from && f.to ? { from: f.from, to: f.to + 'T23:59:59' } : {}),
         });
-        setTxns(txnData.transactions || []);
+        setTxns(txnData.data || []);
       } else {
         // Partition Key read — O(1) trên node
         txnData = await api.getTransactions(id, {
           limit: f.limit,
           ...(f.from && f.to ? { from: f.from, to: f.to + 'T23:59:59' } : {}),
         });
-        setTxns(txnData.transactions || []);
+        setTxns(txnData.data || []);
       }
 
       setQueryMs(Math.round(performance.now() - t0));
