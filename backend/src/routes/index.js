@@ -34,6 +34,7 @@ router.get('/transactions/by-type/:type',
 router.get('/transactions/:accountId',
   param('accountId').notEmpty(),
   query('limit').optional().isInt({ min: 1, max: 500 }),
+  query('type').optional().isIn(['ALL', 'DEPOSIT', 'WITHDRAW', 'TRANSFER', 'PAYMENT', 'REFUND']),
   txnCtrl.getByAccount);
 
 // Ghi 1 giao dịch

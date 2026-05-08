@@ -44,13 +44,26 @@ Q.GET_TXN_BY_ACCOUNT = `
   WHERE account_id = ?
   LIMIT ?`;
 
-// Range query theo thời gian — Clustering Key hỗ trợ range scan hiệu quả
 Q.GET_TXN_BY_ACCOUNT_TIME_RANGE = `
   SELECT * FROM transactions
   WHERE account_id = ?
     AND txn_time >= ?
     AND txn_time <= ?
   LIMIT ?`;
+
+Q.GET_TXN_BY_ACCOUNT_AND_TYPE = `
+  SELECT * FROM transactions
+  WHERE account_id = ?
+    AND type = ?
+  LIMIT ? ALLOW FILTERING`;
+
+Q.GET_TXN_BY_ACCOUNT_TIME_AND_TYPE = `
+  SELECT * FROM transactions
+  WHERE account_id = ?
+    AND type = ?
+    AND txn_time >= ?
+    AND txn_time <= ?
+  LIMIT ? ALLOW FILTERING`;
 
 // Query qua Materialized View transactions_by_type (mv_setup.cql)
 Q.GET_TXN_BY_TYPE = `

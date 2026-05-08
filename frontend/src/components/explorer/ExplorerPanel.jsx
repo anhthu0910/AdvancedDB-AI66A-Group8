@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import SearchBar from './SearchBar';
 import FilterBar from './FilterBar';
 import AccountCard from './AccountCard';
@@ -7,6 +7,7 @@ import AlertsPanel from './AlertsPanel';
 import * as api from '../../api/index';
 import { formatVND } from '../../utils/format';
 import StatCard from '../shared/StatCard';
+import { useIngestionStream } from '../../hooks/useSocket';
 
 const defaultFilters = {
   type:  'ALL',
@@ -24,6 +25,35 @@ export default function ExplorerPanel() {
   const [loading,   setLoading]     = useState(false);
   const [queryMs,   setQueryMs]     = useState(null);
   const [error,     setError]       = useState('');
+  const [currentBalance, setCurrentBalance] = useState(0);
+
+  const { latestItems } = useIngestionStream();
+
+  // Cập nhật balance realtime dựa trên giao dịch mới từ stream
+  useEffect(() => {
+    if (!accountId || !account) return;
+
+    const relevantTxns = latestItems.filter(t => t.account_id === accountId && t.status === 'SUCCESS');
+
+    setCurrentBalance(prev => {
+      let newBalance = prev;
+      relevantTxns.forEach(t => {
+        const amt = Number(t.amount);
+        switch (t.type) {
+          case 'DEPOSIT':
+          case 'REFUND':
+            newBalance += amt;
+            break;
+          case 'WITHDRAW':
+          case 'TRANSFER':
+          case 'PAYMENT':
+            newBalance -= amt;
+            break;
+        }
+      });
+      return newBalance;
+    });
+  }, [latestItems, accountId, account]);
 
   const query = useCallback(async (id, f = filters) => {
     if (!id) return;
@@ -38,26 +68,27 @@ export default function ExplorerPanel() {
         api.getFraudAlerts(id, { limit: 10 }).catch(() => ({ alerts: [] })),
       ]);
 
+      if (!accData) {
+        setAccount(null);
+        setAlerts([]);
+        setTxns([]);
+        setError(`Tài khoản ${id} không tồn tại`);
+        setQueryMs(null);
+        setLoading(false);
+        return;
+      }
+
       setAccount(accData);
+      setCurrentBalance(Number(accData.balance));
       setAlerts(alertData?.alerts || []);
 
-      // Transactions — dùng MV nếu filter theo type, dùng partition key nếu ALL
-      let txnData;
-      if (f.type && f.type !== 'ALL') {
-        // Materialized View: transactions_by_type
-        txnData = await api.getTransactionsByType(f.type, {
-          limit: f.limit,
-          ...(f.from && f.to ? { from: f.from, to: f.to + 'T23:59:59' } : {}),
-        });
-        setTxns(txnData.data || []);
-      } else {
-        // Partition Key read — O(1) trên node
-        txnData = await api.getTransactions(id, {
-          limit: f.limit,
-          ...(f.from && f.to ? { from: f.from, to: f.to + 'T23:59:59' } : {}),
-        });
-        setTxns(txnData.data || []);
-      }
+      // Transactions — luôn query theo account_id để giữ đúng context
+      const txnData = await api.getTransactions(id, {
+        limit: f.limit,
+        ...(f.type && f.type !== 'ALL' ? { type: f.type } : {}),
+        ...(f.from && f.to ? { from: f.from, to: f.to } : {}),
+      });
+      setTxns(txnData.data || []);
 
       setQueryMs(Math.round(performance.now() - t0));
     } catch (err) {
@@ -75,13 +106,19 @@ export default function ExplorerPanel() {
 
   const handleFilterChange = (f) => {
     setFilters(f);
-    if (accountId) query(accountId, f);
+    if (accountId) {
+      setTxns([]); // Clear txns trước khi query mới
+      query(accountId, f);
+    }
   };
 
   // Summary stats từ txns hiện tại
   const totalDeposit  = txns.filter(t => t.type === 'DEPOSIT').reduce((s, t) => s + Number(t.amount), 0);
   const totalWithdraw = txns.filter(t => ['WITHDRAW','PAYMENT'].includes(t.type)).reduce((s, t) => s + Number(t.amount), 0);
   const successRate   = txns.length ? Math.round(txns.filter(t => t.status === 'SUCCESS').length / txns.length * 100) : 0;
+
+  // Tạo account object với balance realtime
+  const accountWithRealtimeBalance = account ? { ...account, balance: currentBalance } : null;
 
   return (
     <div style={styles.panel}>
@@ -111,7 +148,7 @@ export default function ExplorerPanel() {
       )}
 
       {/* ── Account card ── */}
-      {account && <div style={styles.section}><AccountCard account={account} /></div>}
+      {accountWithRealtimeBalance && <div style={styles.section}><AccountCard account={accountWithRealtimeBalance} /></div>}
 
       {/* ── Mini stats ── */}
       {txns.length > 0 && (

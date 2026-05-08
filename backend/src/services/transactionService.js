@@ -7,18 +7,33 @@ const toUuid = str => cassandra.types.Uuid.fromString(str);
 const toBD   = n   => cassandra.types.BigDecimal.fromNumber(Number(n));
 
 // ─── Lấy lịch sử giao dịch theo account ────────────────────────────────────
-async function getByAccount({ accountId, limit = 50, from, to }) {
-  if (from && to) {
-    const result = await db.execute(Q.GET_TXN_BY_ACCOUNT_TIME_RANGE, [
+async function getByAccount({ accountId, limit = 50, from, to, type }) {
+  let result;
+
+  if (type && type !== 'ALL') {
+    if (from && to) {
+      result = await db.execute(Q.GET_TXN_BY_ACCOUNT_TIME_AND_TYPE, [
+        accountId,
+        type,
+        new Date(from),
+        new Date(to),
+        limit,
+      ]);
+    } else {
+      result = await db.execute(Q.GET_TXN_BY_ACCOUNT_AND_TYPE, [accountId, type, limit]);
+    }
+  } else if (from && to) {
+    result = await db.execute(Q.GET_TXN_BY_ACCOUNT_TIME_RANGE, [
       accountId,
       new Date(from),
       new Date(to),
       limit,
     ]);
-    return result.rows;
+  } else {
+    result = await db.execute(Q.GET_TXN_BY_ACCOUNT, [accountId, limit]);
   }
-  const result = await db.execute(Q.GET_TXN_BY_ACCOUNT, [accountId, limit]);
-  return result.rows;
+
+  return (result.rows || []);
 }
 
 // ─── Lấy giao dịch qua MV (theo loại) ───────────────────────────────────────
