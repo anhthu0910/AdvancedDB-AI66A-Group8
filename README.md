@@ -258,6 +258,7 @@ docker exec -i cassandra cqlsh
 ```
 
 Kết quả mong đợi:
+```
 # Kết nối vào Cassandra và chạy các script theo thứ tự:
 docker exec -i cassandra cqlsh < database/keyspace.cql
 docker exec -i cassandra cqlsh < database/schema.cql
